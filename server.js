@@ -311,62 +311,150 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .send-btn:active{transform:scale(.94);}
 .send-btn svg{width:16px;height:16px;}
  
-/* ── VIDEO CALL ─────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════
+   VIDEO CALL OVERLAY
+══════════════════════════════════════════════════════ */
 #s-call{
   position:fixed;inset:0;z-index:200;
   background:rgba(5,8,18,.97);
   align-items:center;justify-content:center;flex-direction:column;display:none;
 }
 #s-call.active{display:flex;}
+ 
 .call-box{
-  width:900px;max-width:97vw;background:var(--panel);
-  border-radius:22px;border:1px solid var(--bdr);overflow:hidden;
-  box-shadow:0 40px 100px rgba(0,0,0,.7);
+  width:960px;max-width:99vw;
+  background:var(--panel);border-radius:22px;border:1px solid var(--bdr);
+  overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.7);
   display:flex;flex-direction:column;
+  /* altura adaptable según modo */
+  max-height:96vh;
 }
+ 
+/* ── Cabecera de llamada ────────────────────────────── */
 .call-head{
-  padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid var(--bdr);
+  padding:12px 18px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--bdr);flex-shrink:0;
 }
 .call-title{font-weight:700;font-size:15px;}
 .call-timer{font-size:13px;color:var(--green);font-family:monospace;}
+.call-head-actions{display:flex;gap:4px;align-items:center;}
+ 
+/* ══ GRID NORMAL: varios tiles ══════════════════════ */
 .video-grid{
-  display:grid;gap:2px;background:var(--bg);
-  min-height:360px;max-height:55vh;
-  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  display:grid;gap:3px;background:var(--bg);
+  flex:1;overflow:hidden;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  /* altura máxima en modo normal */
+  min-height:220px;max-height:58vh;
 }
+ 
+/* ══ MODO ENFOCADO: 1 grande + miniaturas abajo ═════ */
+.video-grid.focused-mode{
+  display:flex;flex-direction:column;
+  max-height:72vh;
+}
+.focused-main{
+  flex:1;background:var(--bg);position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  min-height:0;
+}
+.focused-main video{
+  width:100%;height:100%;object-fit:contain;display:none;
+}
+.focused-main video.active{display:block;}
+.thumb-strip{
+  display:flex;gap:3px;background:var(--bg);
+  padding:3px;flex-shrink:0;overflow-x:auto;
+  height:90px;
+}
+.thumb-strip::-webkit-scrollbar{height:3px;}
+.thumb-strip::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
+ 
+/* ══ TILE base ══════════════════════════════════════ */
 .vtile{
   background:var(--surface);position:relative;
   display:flex;align-items:center;justify-content:center;
-  aspect-ratio:16/9;overflow:hidden;
+  overflow:hidden;cursor:pointer;
 }
+/* ratio normal en grilla */
+.video-grid:not(.focused-mode) .vtile{aspect-ratio:16/9;}
+ 
+/* tile en modo miniatura (thumb-strip) */
+.vtile.thumb{
+  width:140px;height:84px;flex-shrink:0;border-radius:8px;
+  border:2px solid transparent;transition:border-color var(--ease);
+}
+.vtile.thumb:hover{border-color:var(--accent);}
+.vtile.thumb.active-thumb{border-color:var(--accent);}
+ 
+/* tile expandido (ocupa focused-main) */
+.vtile.expanded{
+  width:100%;height:100%;border-radius:0;cursor:default;
+}
+ 
 .vtile video{width:100%;height:100%;object-fit:cover;display:none;}
 .vtile video.active{display:block;}
+.vtile.expanded video{object-fit:contain;}
+ 
 .vtile .av-lg{
-  width:70px;height:70px;border-radius:50%;
+  width:60px;height:60px;border-radius:50%;
   background:linear-gradient(135deg,var(--accent),var(--accent2));
   display:flex;align-items:center;justify-content:center;
-  font-size:28px;font-weight:700;color:#fff;
+  font-size:24px;font-weight:700;color:#fff;pointer-events:none;
 }
+.vtile.thumb .av-lg{width:36px;height:36px;font-size:14px;}
+ 
 .vtile .tname{
-  position:absolute;bottom:10px;left:10px;font-size:12px;font-weight:600;
-  background:rgba(0,0,0,.6);padding:3px 10px;border-radius:99px;
+  position:absolute;bottom:7px;left:8px;font-size:11px;font-weight:600;
+  background:rgba(0,0,0,.65);padding:2px 9px;border-radius:99px;pointer-events:none;
 }
-.vtile.local-tile{border:2px solid var(--accent);}
-.vtile .muted-icon{position:absolute;top:10px;right:10px;font-size:18px;display:none;}
+.vtile.thumb .tname{font-size:9px;bottom:4px;left:5px;padding:1px 6px;}
+ 
+.vtile.local-tile{outline:2px solid var(--accent);outline-offset:-2px;}
+.vtile .muted-icon{position:absolute;top:7px;right:7px;font-size:15px;display:none;pointer-events:none;}
 .vtile.muted .muted-icon{display:block;}
+ 
+/* Botones flotantes sobre cada tile (solo visibles en hover en modo grid) */
+.vtile .tile-actions{
+  position:absolute;top:6px;left:6px;display:flex;gap:4px;
+  opacity:0;transition:opacity var(--ease);pointer-events:none;
+}
+.video-grid:not(.focused-mode) .vtile:hover .tile-actions{opacity:1;pointer-events:all;}
+/* En focused-main siempre visible */
+.focused-main .vtile .tile-actions{opacity:1;pointer-events:all;}
+ 
+.tile-btn{
+  background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.18);
+  border-radius:6px;padding:4px 7px;font-size:12px;cursor:pointer;
+  color:#fff;line-height:1;transition:background var(--ease);
+  white-space:nowrap;
+}
+.tile-btn:hover{background:rgba(59,130,246,.8);}
+ 
+/* ══ MODO PANTALLA COMPLETA (fullscreen del tile) ═══ */
+.vtile.fullscreen-tile{
+  position:fixed!important;inset:0!important;z-index:500!important;
+  width:100vw!important;height:100vh!important;
+  border-radius:0!important;cursor:default;
+}
+.vtile.fullscreen-tile video{object-fit:contain;}
+.vtile.fullscreen-tile .tile-actions{opacity:1;pointer-events:all;}
+.vtile.fullscreen-tile .tname{bottom:14px;left:14px;font-size:13px;}
+ 
+/* ── Controles de llamada ───────────────────────── */
 .call-ctrls{
-  padding:16px 20px;display:flex;align-items:center;justify-content:center;
-  gap:12px;border-top:1px solid var(--bdr);
+  padding:14px 18px;display:flex;align-items:center;justify-content:center;
+  gap:10px;border-top:1px solid var(--bdr);flex-shrink:0;flex-wrap:wrap;
 }
 .cc{
-  width:50px;height:50px;border-radius:50%;border:1px solid var(--bdr);
+  width:48px;height:48px;border-radius:50%;border:1px solid var(--bdr);
   background:var(--surface);color:var(--tx);cursor:pointer;
-  display:flex;align-items:center;justify-content:center;font-size:20px;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
   transition:var(--ease);position:relative;
 }
 .cc:hover{background:var(--card);transform:scale(1.07);}
 .cc.off{background:var(--card);border-color:var(--txd);}
+.cc.active-ctrl{background:var(--accent);border-color:var(--accent);}
 .cc.danger{background:var(--red);border-color:var(--red);}
 .cc::after{
   content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);
@@ -402,8 +490,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .b-dec{background:var(--red);}
 .b-acc,.b-dec{
   width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;font-size:20px;
-  transition:var(--ease);
+  display:flex;align-items:center;justify-content:center;font-size:20px;transition:var(--ease);
 }
 .b-acc:hover,.b-dec:hover{opacity:.82;transform:scale(1.07);}
  
@@ -411,7 +498,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .toast{
   position:fixed;top:18px;left:50%;transform:translateX(-50%);
   background:var(--card);border:1px solid var(--bdr);border-radius:10px;
-  padding:10px 20px;font-size:13px;font-weight:600;z-index:400;
+  padding:10px 20px;font-size:13px;font-weight:600;z-index:600;
   opacity:0;transition:opacity .25s;pointer-events:none;
 }
 .toast.show{opacity:1;}
@@ -419,6 +506,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 @media(max-width:660px){
   .sidebar{display:none;}
   .video-grid{grid-template-columns:1fr;}
+  .thumb-strip{height:72px;}
+  .vtile.thumb{width:110px;height:66px;}
 }
 </style>
 </head>
@@ -434,12 +523,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
       <h1>VidRoom</h1>
     </div>
     <p class="logo-sub">Chat + Videollamada en tiempo real</p>
- 
     <div class="tabs">
       <button id="tab-create" class="on" onclick="setTab('create')">Crear sala</button>
-      <button id="tab-join"        onclick="setTab('join')">Unirse con código</button>
+      <button id="tab-join" onclick="setTab('join')">Unirse con código</button>
     </div>
- 
     <div class="fg">
       <label>Tu nombre</label>
       <input id="inp-name" type="text" placeholder="¿Cómo te llamas?" maxlength="32" autocomplete="off"/>
@@ -457,7 +544,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
                oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"/>
       </div>
     </div>
- 
     <div class="err" id="login-err"></div>
     <button class="btn-main" id="auth-btn" onclick="doAuth()">Crear sala →</button>
   </div>
@@ -476,7 +562,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
       </div>
       <button class="icon-btn" onclick="copyInvite()" title="Copiar enlace">📋</button>
     </div>
- 
     <div class="invite-badge">
       <div class="lbl">Código de invitación</div>
       <div class="invite-row">
@@ -485,16 +570,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
       </div>
     </div>
     <div class="room-name-lbl" id="room-name-lbl"></div>
- 
-    <!-- TURN status -->
     <div style="padding:6px 14px 2px;display:flex;align-items:center;gap:6px;">
       <span class="turn-badge" id="turn-badge"><span class="dot-s"></span>TURN</span>
       <span style="font-size:10px;color:var(--txd)" id="turn-label">cargando…</span>
     </div>
- 
     <div class="section-lbl">Participantes</div>
     <div class="user-list" id="user-list"></div>
- 
     <div style="padding:12px 14px;border-top:1px solid var(--bdr);margin-top:auto;">
       <button class="btn-main" style="font-size:13px;padding:10px" onclick="leaveRoom()">Salir de la sala</button>
     </div>
@@ -511,14 +592,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
       </div>
       <div class="ch-actions">
         <button class="icon-btn" title="Videollamada" onclick="startCall()">📹</button>
-        <button class="icon-btn" title="Copiar enlace de invitación" onclick="copyInvite()">🔗</button>
+        <button class="icon-btn" title="Copiar enlace" onclick="copyInvite()">🔗</button>
       </div>
     </div>
- 
     <div class="msgs" id="msgs">
       <div class="date-sep"><span>Hoy</span></div>
     </div>
- 
     <div class="input-bar">
       <div class="input-wrap">
         <textarea id="msg-ta" placeholder="Escribe un mensaje…" rows="1"
@@ -536,20 +615,28 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
  
 <!-- ══ VIDEO CALL ══════════════════════════════════════════ -->
 <div id="s-call">
-  <div class="call-box">
+  <div class="call-box" id="call-box">
     <div class="call-head">
       <div>
         <div class="call-title" id="call-room-title">Videollamada</div>
         <div class="call-timer" id="call-timer">00:00</div>
       </div>
-      <button class="icon-btn" onclick="copyInvite()" title="Invitar">🔗</button>
+      <div class="call-head-actions">
+        <!-- Modo: grilla / enfocado -->
+        <button class="cc" id="btn-layout" onclick="toggleLayout()" data-tip="Cambiar vista" style="width:36px;height:36px;font-size:14px;">⊞</button>
+        <button class="icon-btn" onclick="copyInvite()" title="Invitar">🔗</button>
+      </div>
     </div>
+ 
+    <!-- Contenedor de video: cambia estructura según modo -->
     <div class="video-grid" id="video-grid"></div>
+ 
     <div class="call-ctrls">
-      <button class="cc" id="btn-mic"  onclick="toggleMic()"    data-tip="Silenciar">🎤</button>
-      <button class="cc" id="btn-cam"  onclick="toggleCam()"    data-tip="Cámara">📷</button>
-      <button class="cc"               onclick="toggleScreen()" data-tip="Pantalla">🖥️</button>
-      <button class="cc danger"        onclick="endCall()"       data-tip="Colgar">📵</button>
+      <button class="cc" id="btn-mic"    onclick="toggleMic()"    data-tip="Silenciar">🎤</button>
+      <button class="cc" id="btn-cam"    onclick="toggleCam()"    data-tip="Cámara">📷</button>
+      <button class="cc" id="btn-screen" onclick="toggleScreen()" data-tip="Compartir pantalla">🖥️</button>
+      <button class="cc" id="btn-layout2" onclick="toggleLayout()" data-tip="Vista enfocada">⊞</button>
+      <button class="cc danger"          onclick="endCall()"       data-tip="Colgar">📵</button>
     </div>
   </div>
 </div>
@@ -576,13 +663,11 @@ let me = { name:'', socketId:'' };
 let room = { inviteCode:'', name:'', users:[] };
 let activeTab = 'create';
  
-// ICE / TURN
 let iceServers = [
   { urls:'stun:stun.l.google.com:19302' },
   { urls:'stun:stun1.l.google.com:19302' }
 ];
  
-// WebRTC
 let localStream  = null;
 let screenStream = null;
 let peerConns    = {};
@@ -591,8 +676,15 @@ let callTimer    = null;
 let callSeconds  = 0;
 let micOn = true, camOn = true;
  
+/* ── Estado de vista de video ─────────────────────── */
+// 'grid'    → todos los tiles en cuadrícula igual
+// 'focused' → 1 grande arriba + miniaturas abajo
+let viewMode    = 'grid';
+let pinnedId    = null;   // socketId del tile expandido en modo focused
+let fullscreenId = null;  // socketId del tile en pantalla completa
+ 
 /* ═══════════════════════════════════════════════════
-   CARGAR ICE SERVERS (incluye TURN si está disponible)
+   ICE SERVERS
 ═══════════════════════════════════════════════════ */
 async function loadIceServers() {
   try {
@@ -602,14 +694,10 @@ async function loadIceServers() {
     const hasTurn = iceServers.some(s => s.urls && String(s.urls).startsWith('turn'));
     const badge = document.getElementById('turn-badge');
     const label = document.getElementById('turn-label');
-    if (hasTurn) {
-      badge.classList.add('ready');
-      label.textContent = 'Conectado — NAT traversal activo';
-    } else {
-      label.textContent = 'Solo STUN (mismo segmento de red)';
-    }
+    if (hasTurn) { badge.classList.add('ready'); label.textContent = 'TURN activo'; }
+    else { label.textContent = 'Solo STUN'; }
   } catch(e) {
-    document.getElementById('turn-label').textContent = 'No disponible — solo STUN';
+    document.getElementById('turn-label').textContent = 'No disponible';
   }
 }
  
@@ -648,7 +736,6 @@ function doAuth() {
   if (!name) { document.getElementById('login-err').textContent='Escribe tu nombre'; return; }
   const btn = document.getElementById('auth-btn');
   btn.disabled = true; btn.textContent = 'Conectando…';
- 
   if (activeTab === 'create') {
     const roomName = document.getElementById('inp-room').value.trim() || 'Mi sala';
     socket.emit('create-room', { userName:name, roomName }, res => {
@@ -666,25 +753,23 @@ function doAuth() {
     });
   }
 }
- 
 document.addEventListener('keydown', e => {
   if (e.key==='Enter' && document.getElementById('s-login').classList.contains('active')) doAuth();
+  if (e.key==='Escape' && fullscreenId) exitFullscreen();
 });
  
 /* ═══════════════════════════════════════════════════
-   ENTRAR
+   ENTRAR A LA APP
 ═══════════════════════════════════════════════════ */
 function enterApp(name, res) {
   me.name = name; me.socketId = socket.id;
   room.inviteCode = res.inviteCode; room.name = res.roomName; room.users = res.users;
- 
   document.getElementById('my-av').childNodes[0].textContent = initials(name);
   document.getElementById('my-name-lbl').textContent = name;
   document.getElementById('invite-display').textContent = res.inviteCode;
   document.getElementById('room-name-lbl').textContent = res.roomName;
   document.getElementById('ch-room-name').textContent = res.roomName;
   document.getElementById('call-room-title').textContent = 'Videollamada — '+res.roomName;
- 
   renderUserList(); updateStatus();
   addSysMsg('Entraste a la sala · '+nowTime());
   showScreen('s-app');
@@ -710,13 +795,9 @@ function updateStatus() {
   document.getElementById('ch-status').textContent = \`● \${room.users.length} participante\${room.users.length!==1?'s':''}\`;
 }
 function leaveRoom() { if(callActive) endCall(); location.reload(); }
- 
-/* ═══════════════════════════════════════════════════
-   COPIAR CÓDIGO
-═══════════════════════════════════════════════════ */
 function copyInvite() {
   const link = \`\${location.origin}?code=\${room.inviteCode}\`;
-  navigator.clipboard.writeText(link).then(()=>toast('🔗 Enlace copiado: '+link));
+  navigator.clipboard.writeText(link).then(()=>toast('🔗 Enlace copiado'));
 }
  
 /* ═══════════════════════════════════════════════════
@@ -756,7 +837,7 @@ async function getLocalStream() {
     try {
       localStream = await navigator.mediaDevices.getUserMedia({ video:false, audio:true });
       toast('⚠️ Cámara no disponible, solo audio');
-    } catch(e2) { toast('❌ No se pudo acceder al micrófono/cámara'); localStream=null; }
+    } catch(e2) { toast('❌ Sin acceso a micrófono/cámara'); localStream=null; }
   }
   return localStream;
 }
@@ -785,9 +866,7 @@ async function createOffer(targetId) {
  
 function createPC(peerId) {
   if (peerConns[peerId]) peerConns[peerId].close();
-  // Usa iceServers cargados desde /api/ice-servers (incluye TURN)
   const pc = new RTCPeerConnection({ iceServers });
- 
   pc.onicecandidate = e => {
     if (e.candidate) socket.emit('webrtc-ice-candidate', { to:peerId, candidate:e.candidate });
   };
@@ -798,7 +877,6 @@ function createPC(peerId) {
   pc.onconnectionstatechange = () => {
     if (['disconnected','failed','closed'].includes(pc.connectionState)) removeVideoTile(peerId);
   };
- 
   peerConns[peerId] = pc;
   return pc;
 }
@@ -822,30 +900,223 @@ function endCall() {
   socket.emit('call-end');
   clearInterval(callTimer); callActive=false;
   document.getElementById('s-call').classList.remove('active');
+  // Reset view state
+  viewMode='grid'; pinnedId=null; fullscreenId=null;
+  document.getElementById('video-grid').className='video-grid';
   document.getElementById('video-grid').innerHTML='';
+  updateLayoutBtn();
   toast('📵 Llamada finalizada');
 }
  
+/* ═══════════════════════════════════════════════════
+   GESTIÓN DE TILES DE VIDEO
+═══════════════════════════════════════════════════ */
+ 
+// Registro: socketId → { stream, name, isLocal }
+const tileRegistry = {};
+ 
 function addVideoTile(id, name, stream, isLocal) {
-  const grid = document.getElementById('video-grid');
-  let tile = document.getElementById('vt-'+id);
-  if (!tile) {
-    tile=document.createElement('div');
-    tile.id='vt-'+id;
-    tile.className='vtile'+(isLocal?' local-tile':'');
-    tile.innerHTML=\`<video id="vid-\${id}" autoplay playsinline \${isLocal?'muted':''}></video>
-      <div class="av-lg">\${initials(name)}</div>
-      <div class="tname">\${escHtml(name)}\${isLocal?' (tú)':''}</div>
-      <div class="muted-icon">🔇</div>\`;
-    grid.appendChild(tile);
-  }
-  const vid=document.getElementById('vid-'+id);
-  vid.srcObject=stream; vid.classList.add('active');
-  vid.onloadedmetadata=()=>{ const a=tile.querySelector('.av-lg'); if(a) a.style.display='none'; };
+  tileRegistry[id] = { stream, name, isLocal };
+  rebuildGrid();
 }
  
-function removeVideoTile(id) { document.getElementById('vt-'+id)?.remove(); }
+function removeVideoTile(id) {
+  delete tileRegistry[id];
+  if (pinnedId === id) pinnedId = null;
+  if (fullscreenId === id) exitFullscreen();
+  rebuildGrid();
+}
  
+/* Construye el DOM del grid según viewMode y pinnedId */
+function rebuildGrid() {
+  if (fullscreenId) return; // No reconstruir mientras hay pantalla completa
+  const grid = document.getElementById('video-grid');
+  const ids = Object.keys(tileRegistry);
+ 
+  if (viewMode === 'grid' || ids.length <= 1) {
+    // ── MODO GRILLA ──────────────────────────────────
+    grid.className = 'video-grid';
+    grid.innerHTML = '';
+    ids.forEach(id => {
+      const { stream, name, isLocal } = tileRegistry[id];
+      grid.appendChild(buildTile(id, name, stream, isLocal, 'grid'));
+    });
+  } else {
+    // ── MODO ENFOCADO ────────────────────────────────
+    grid.className = 'video-grid focused-mode';
+    grid.innerHTML = '';
+ 
+    // Determinamos cuál va grande (pinnedId o el primero remoto)
+    const focusId = pinnedId || ids.find(id => !tileRegistry[id].isLocal) || ids[0];
+ 
+    // Contenedor principal
+    const main = document.createElement('div');
+    main.className = 'focused-main';
+    const { stream, name, isLocal } = tileRegistry[focusId];
+    main.appendChild(buildTile(focusId, name, stream, isLocal, 'expanded'));
+    grid.appendChild(main);
+ 
+    // Miniaturas de los demás
+    const strip = document.createElement('div');
+    strip.className = 'thumb-strip';
+    ids.forEach(id => {
+      if (id === focusId) return;
+      const t = tileRegistry[id];
+      const thumb = buildTile(id, t.name, t.stream, t.isLocal, 'thumb');
+      if (id === pinnedId) thumb.classList.add('active-thumb');
+      strip.appendChild(thumb);
+    });
+    if (strip.children.length > 0) grid.appendChild(strip);
+  }
+}
+ 
+/* Crea el elemento DOM de un tile */
+function buildTile(id, name, stream, isLocal, mode) {
+  const tile = document.createElement('div');
+  tile.id = 'vt-'+id;
+ 
+  if (mode === 'grid') {
+    tile.className = 'vtile' + (isLocal ? ' local-tile' : '');
+  } else if (mode === 'thumb') {
+    tile.className = 'vtile thumb' + (isLocal ? ' local-tile' : '');
+    // Clic en miniatura → enfocar ese tile
+    tile.onclick = () => { pinnedId = id; rebuildGrid(); };
+  } else {
+    tile.className = 'vtile expanded' + (isLocal ? ' local-tile' : '');
+  }
+ 
+  // Botones flotantes de control del tile
+  const actions = document.createElement('div');
+  actions.className = 'tile-actions';
+ 
+  if (mode !== 'thumb') {
+    // Botón expandir/enfocar (solo en modo grid) o contraer (en expanded)
+    if (mode === 'grid') {
+      const btnFocus = document.createElement('button');
+      btnFocus.className = 'tile-btn';
+      btnFocus.textContent = '⛶ Enfocar';
+      btnFocus.onclick = (e) => { e.stopPropagation(); pinnedId = id; viewMode = 'focused'; rebuildGrid(); updateLayoutBtn(); };
+      actions.appendChild(btnFocus);
+    } else if (mode === 'expanded') {
+      const btnShrink = document.createElement('button');
+      btnShrink.className = 'tile-btn';
+      btnShrink.textContent = '⊞ Grilla';
+      btnShrink.onclick = (e) => { e.stopPropagation(); viewMode = 'grid'; pinnedId = null; rebuildGrid(); updateLayoutBtn(); };
+      actions.appendChild(btnShrink);
+    }
+ 
+    // Botón pantalla completa
+    const btnFull = document.createElement('button');
+    btnFull.className = 'tile-btn';
+    btnFull.textContent = '⛶ Pantalla completa';
+    btnFull.onclick = (e) => { e.stopPropagation(); enterFullscreen(id); };
+    actions.appendChild(btnFull);
+  }
+ 
+  tile.appendChild(actions);
+ 
+  // Video
+  const vid = document.createElement('video');
+  vid.id = 'vid-'+id;
+  vid.autoplay = true;
+  vid.playsInline = true;
+  if (isLocal) vid.muted = true;
+  vid.srcObject = stream;
+  vid.className = 'active';
+  tile.appendChild(vid);
+ 
+  // Avatar fallback
+  const avLg = document.createElement('div');
+  avLg.className = 'av-lg';
+  avLg.textContent = initials(name);
+  tile.appendChild(avLg);
+ 
+  vid.onloadedmetadata = () => { avLg.style.display = 'none'; };
+  // Si el track ya tiene datos
+  if (stream.getVideoTracks().length > 0) {
+    const vt = stream.getVideoTracks()[0];
+    if (vt.readyState === 'live' && vt.enabled) avLg.style.display = 'none';
+  }
+ 
+  // Nombre
+  const tname = document.createElement('div');
+  tname.className = 'tname';
+  tname.textContent = name + (isLocal ? ' (tú)' : '');
+  tile.appendChild(tname);
+ 
+  // Ícono mute
+  const mIcon = document.createElement('div');
+  mIcon.className = 'muted-icon';
+  mIcon.textContent = '🔇';
+  tile.appendChild(mIcon);
+ 
+  return tile;
+}
+ 
+/* ── PANTALLA COMPLETA ──────────────────────────── */
+function enterFullscreen(id) {
+  if (!tileRegistry[id]) return;
+  fullscreenId = id;
+ 
+  const { stream, name, isLocal } = tileRegistry[id];
+  const tile = buildTile(id, name, stream, isLocal, 'expanded');
+  tile.classList.add('fullscreen-tile');
+ 
+  // Botón para salir
+  const btnExit = document.createElement('button');
+  btnExit.className = 'tile-btn';
+  btnExit.textContent = '✕ Salir de pantalla completa';
+  btnExit.style.cssText = 'position:absolute;top:14px;right:14px;font-size:13px;padding:6px 12px;z-index:10;';
+  btnExit.onclick = exitFullscreen;
+  tile.appendChild(btnExit);
+ 
+  // Añadir hint ESC
+  const hint = document.createElement('div');
+  hint.style.cssText = 'position:absolute;bottom:14px;right:14px;font-size:11px;color:rgba(255,255,255,.5);pointer-events:none;';
+  hint.textContent = 'ESC para salir';
+  tile.appendChild(hint);
+ 
+  tile.id = 'fullscreen-tile';
+  document.body.appendChild(tile);
+  toast('⛶ Pantalla completa — ESC para salir');
+}
+ 
+function exitFullscreen() {
+  const el = document.getElementById('fullscreen-tile');
+  if (el) el.remove();
+  fullscreenId = null;
+  rebuildGrid();
+}
+ 
+/* ── ALTERNAR VISTA GRID ↔ FOCUSED ─────────────── */
+function toggleLayout() {
+  const ids = Object.keys(tileRegistry);
+  if (ids.length <= 1) { toast('Necesitas más participantes para cambiar la vista'); return; }
+ 
+  if (viewMode === 'grid') {
+    viewMode = 'focused';
+    // Enfocar automáticamente el primer tile remoto
+    pinnedId = ids.find(id => !tileRegistry[id].isLocal) || ids[0];
+    toast('Vista enfocada — clic en miniatura para cambiar');
+  } else {
+    viewMode = 'grid';
+    pinnedId = null;
+    toast('Vista en cuadrícula');
+  }
+  rebuildGrid();
+  updateLayoutBtn();
+}
+ 
+function updateLayoutBtn() {
+  const icon = viewMode === 'focused' ? '⊟' : '⊞';
+  const tip  = viewMode === 'focused' ? 'Vista grilla' : 'Vista enfocada';
+  ['btn-layout','btn-layout2'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) { b.textContent = icon; b.setAttribute('data-tip', tip); }
+  });
+}
+ 
+/* ── MIC / CAM / PANTALLA ──────────────────────── */
 function toggleMic() {
   if(!localStream) return;
   micOn=!micOn;
@@ -853,6 +1124,8 @@ function toggleMic() {
   const btn=document.getElementById('btn-mic');
   btn.textContent=micOn?'🎤':'🔇'; btn.classList.toggle('off',!micOn);
   document.getElementById('vt-'+socket.id)?.classList.toggle('muted',!micOn);
+  if (document.getElementById('fullscreen-tile')?.id === 'vt-'+socket.id)
+    document.getElementById('fullscreen-tile')?.classList.toggle('muted',!micOn);
 }
  
 function toggleCam() {
@@ -864,6 +1137,7 @@ function toggleCam() {
 }
  
 async function toggleScreen() {
+  const btn = document.getElementById('btn-screen');
   if (screenStream) {
     screenStream.getTracks().forEach(t=>t.stop()); screenStream=null;
     if(localStream){
@@ -872,6 +1146,7 @@ async function toggleScreen() {
         const s=pc.getSenders().find(s=>s.track?.kind==='video'); s?.replaceTrack(track);
       });
     }
+    btn.classList.remove('active-ctrl');
     toast('📷 Cámara restaurada'); return;
   }
   try {
@@ -881,6 +1156,7 @@ async function toggleScreen() {
       const s=pc.getSenders().find(s=>s.track?.kind==='video'); s?.replaceTrack(track);
     });
     track.onended=()=>toggleScreen();
+    btn.classList.add('active-ctrl');
     toast('🖥️ Compartiendo pantalla');
   } catch(e){ toast('❌ No se pudo compartir pantalla'); }
 }
@@ -944,9 +1220,7 @@ socket.on('webrtc-ice-candidate', async ({from,candidate}) => {
 socket.on('disconnect', ()=>toast('⚠️ Conexión perdida…'));
 socket.on('reconnect',  ()=>{ toast('✅ Reconectado'); loadIceServers(); });
  
-/* ═══════════════════════════════════════════════════
-   AUTO-FILL code from URL
-═══════════════════════════════════════════════════ */
+/* URL auto-fill */
 const urlCode = new URLSearchParams(location.search).get('code');
 if(urlCode && urlCode.length===6){
   setTab('join');
